@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Overview — Meridian Components Inventory Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    line-height: 1.5;
+  }
+
+  header {
+    background: #0f172a;
+    color: white;
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  header h1 { font-size: 24px; font-weight: 700; }
+  header p { font-size: 13px; color: #64748b; margin-top: 4px; }
+  .header-meta { text-align: right; font-size: 12px; color: #475569; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
+
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 18px; font-weight: 700; color: #0f172a;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .badge {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; background: #3b82f6; color: white;
+    padding: 2px 8px; border-radius: 4px;
+  }
+  h3 { font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+  /* System diagram */
+  .diagram {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr 80px 1fr;
+    gap: 0;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .layer {
+    background: white;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .layer-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .layer-title .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .layer.frontend .layer-title .dot { background: #3b82f6; }
+  .layer.frontend .layer-title { color: #3b82f6; }
+  .layer.backend .layer-title .dot { background: #8b5cf6; }
+  .layer.backend .layer-title { color: #8b5cf6; }
+  .layer.data .layer-title .dot { background: #10b981; }
+  .layer.data .layer-title { color: #10b981; }
+
+  .layer-item {
+    font-size: 13px; color: #334155;
+    padding: 5px 8px; border-radius: 6px;
+    margin-bottom: 3px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: default;
+    transition: background 0.15s;
+  }
+  .layer-item:hover { background: #f1f5f9; }
+  .layer-item .tag {
+    font-size: 10px; color: #94a3b8; font-family: monospace;
+    background: #f1f5f9; padding: 1px 5px; border-radius: 3px;
+  }
+  .layer-item.debt { border-left: 2px solid #f59e0b; padding-left: 6px; }
+  .layer-item.missing { border-left: 2px solid #ef4444; padding-left: 6px; opacity: 0.7; }
+
+  .arrow {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 4px; color: #94a3b8; font-size: 11px;
+    text-align: center;
+  }
+  .arrow-line {
+    width: 100%; height: 2px; background: #e2e8f0;
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '▶';
+    position: absolute; right: -8px; top: -9px;
+    font-size: 12px; color: #94a3b8;
+  }
+  .arrow-label { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+  /* Stack cards */
+  .stack-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .stack-card {
+    background: white;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .stack-card h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+  .stack-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+  }
+  .stack-row:last-child { border-bottom: none; }
+  .stack-name { color: #334155; }
+  .stack-ver { font-family: monospace; font-size: 11px; color: #64748b; background: #f8fafc; padding: 1px 6px; border-radius: 4px; }
+
+  /* API table */
+  .api-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .api-table th {
+    background: #f8fafc; padding: 8px 12px; text-align: left;
+    font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0;
+  }
+  .api-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+  .api-table tr:hover td { background: #f8fafc; }
+  .method {
+    font-family: monospace; font-size: 11px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px; display: inline-block;
+  }
+  .method.get { background: #dbeafe; color: #1d4ed8; }
+  .method.post { background: #dcfce7; color: #15803d; }
+  .endpoint { font-family: monospace; font-size: 12px; color: #334155; }
+  .filters-col { font-family: monospace; font-size: 11px; color: #64748b; }
+
+  /* Data table */
+  .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .data-card {
+    background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 20px;
+    border-top: 3px solid #10b981;
+  }
+  .data-card h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .data-card .count { font-size: 11px; color: #64748b; font-weight: 400; }
+  .data-card .fields { font-size: 11px; color: #64748b; font-family: monospace; line-height: 1.8; margin-top: 8px; }
+
+  /* Debt section */
+  .debt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .debt-card {
+    background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 16px;
+    border-left: 4px solid #f59e0b;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .debt-card.critical { border-left-color: #ef4444; }
+  .debt-icon { font-size: 18px; flex-shrink: 0; }
+  .debt-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+  .debt-desc { font-size: 12px; color: #64748b; }
+
+  /* Flow diagram */
+  .flow {
+    background: white; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    padding: 24px; display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+  }
+  .flow-step {
+    flex: 1; min-width: 120px; text-align: center; padding: 12px 8px;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '→';
+    position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 16px;
+  }
+  .flow-box {
+    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; font-weight: 600; color: #334155;
+    margin-bottom: 6px;
+  }
+  .flow-sub { font-size: 11px; color: #94a3b8; }
+
+  footer {
+    background: #0f172a; color: #475569; text-align: center;
+    padding: 24px; font-size: 12px; margin-top: 48px;
+  }
+
+  .note {
+    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+    padding: 12px 16px; font-size: 13px; color: #92400e; margin-top: 16px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Architecture Overview — Inventory Dashboard</h1>
+    <p>Meridian Components, Inc. &nbsp;·&nbsp; Current-state documentation</p>
+  </div>
+  <div class="header-meta">
+    Prepared by [Your Firm Name]<br>
+    April 2026<br>
+    RFP #MC-2026-0417
+  </div>
+</header>
+
+<main>
+
+  <!-- System Diagram -->
+  <section>
+    <h2><span class="badge">01</span> System Overview</h2>
+    <div class="diagram">
+      <!-- Frontend -->
+      <div class="layer frontend">
+        <div class="layer-title"><span class="dot"></span>Frontend</div>
+        <div class="layer-item">Dashboard <span class="tag">/</span></div>
+        <div class="layer-item">Inventory <span class="tag">/inventory</span></div>
+        <div class="layer-item">Orders <span class="tag">/orders</span></div>
+        <div class="layer-item">Reports <span class="tag">/reports</span></div>
+        <div class="layer-item">Spending <span class="tag">/spending</span></div>
+        <div class="layer-item">Demand <span class="tag">/demand</span></div>
+        <div class="layer-item">Backlog <span class="tag">/backlog</span></div>
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
+          <div class="layer-item debt">FilterBar <span class="tag">component</span></div>
+          <div class="layer-item">LanguageSwitcher <span class="tag">i18n</span></div>
+          <div class="layer-item">Modals × 5 <span class="tag">component</span></div>
+        </div>
+      </div>
+
+      <!-- Arrow 1 -->
+      <div class="arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">HTTP/JSON<br>axios</div>
+      </div>
+
+      <!-- Backend -->
+      <div class="layer backend">
+        <div class="layer-title"><span class="dot"></span>Backend</div>
+        <div class="layer-item">GET /api/inventory <span class="tag">filtered</span></div>
+        <div class="layer-item">GET /api/orders <span class="tag">filtered</span></div>
+        <div class="layer-item">GET /api/dashboard/summary <span class="tag">filtered</span></div>
+        <div class="layer-item">GET /api/reports/* <span class="tag">filtered</span></div>
+        <div class="layer-item">GET /api/spending/* <span class="tag">4 endpoints</span></div>
+        <div class="layer-item">GET /api/demand <span class="tag">no filter</span></div>
+        <div class="layer-item">GET /api/backlog <span class="tag">no filter</span></div>
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
+          <div class="layer-item">apply_filters() <span class="tag">helper</span></div>
+          <div class="layer-item">Pydantic models <span class="tag">validation</span></div>
+          <div class="layer-item debt">Tasks API <span class="tag">partial</span></div>
+          <div class="layer-item missing">Purchase Orders <span class="tag">missing</span></div>
+        </div>
+      </div>
+
+      <!-- Arrow 2 -->
+      <div class="arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">In-memory<br>at startup</div>
+      </div>
+
+      <!-- Data -->
+      <div class="layer data">
+        <div class="layer-title"><span class="dot"></span>Data Layer</div>
+        <div class="layer-item">inventory.json <span class="tag">32 items</span></div>
+        <div class="layer-item">orders.json <span class="tag">250 records</span></div>
+        <div class="layer-item">demand_forecasts.json <span class="tag">9 records</span></div>
+        <div class="layer-item">backlog_items.json <span class="tag">4 records</span></div>
+        <div class="layer-item">spending.json <span class="tag">aggregates</span></div>
+        <div class="layer-item">transactions.json <span class="tag">56 records</span></div>
+        <div class="layer-item missing">purchase_orders.json <span class="tag">empty</span></div>
+        <div class="note" style="margin-top:12px; padding:8px 10px; font-size:11px;">
+          ⚠️ No database. All data loads into memory at server start. Changes do not persist across restarts.
+        </div>
+      </div>
+    </div>
+
+    <!-- Request flow -->
+    <h3>Request Flow</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-box">Browser</div>
+        <div class="flow-sub">User action</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">Vue Component</div>
+        <div class="flow-sub">Filter state change</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">api.js</div>
+        <div class="flow-sub">axios + query params</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">FastAPI Endpoint</div>
+        <div class="flow-sub">apply_filters()</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">JSON Data</div>
+        <div class="flow-sub">In-memory list</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">Pydantic</div>
+        <div class="flow-sub">Validation + serialize</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-box">JSON Response</div>
+        <div class="flow-sub">Rendered in Vue</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technology Stack -->
+  <section>
+    <h2><span class="badge">02</span> Technology Stack</h2>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <h4>Frontend</h4>
+        <div class="stack-row"><span class="stack-name">Vue.js</span><span class="stack-ver">3.4.21</span></div>
+        <div class="stack-row"><span class="stack-name">Vue Router</span><span class="stack-ver">4.3.0</span></div>
+        <div class="stack-row"><span class="stack-name">Axios</span><span class="stack-ver">1.6.7</span></div>
+        <div class="stack-row"><span class="stack-name">Vite (build)</span><span class="stack-ver">5.2.0</span></div>
+        <div class="stack-row"><span class="stack-name">Node.js (runtime)</span><span class="stack-ver">18+</span></div>
+      </div>
+      <div class="stack-card">
+        <h4>Backend</h4>
+        <div class="stack-row"><span class="stack-name">Python</span><span class="stack-ver">3.11+</span></div>
+        <div class="stack-row"><span class="stack-name">FastAPI</span><span class="stack-ver">0.110.0+</span></div>
+        <div class="stack-row"><span class="stack-name">Uvicorn (ASGI)</span><span class="stack-ver">0.24.0+</span></div>
+        <div class="stack-row"><span class="stack-name">Pydantic</span><span class="stack-ver">2.5.0+</span></div>
+        <div class="stack-row"><span class="stack-name">uv (package mgr)</span><span class="stack-ver">—</span></div>
+      </div>
+      <div class="stack-card">
+        <h4>Testing &amp; Tooling</h4>
+        <div class="stack-row"><span class="stack-name">Playwright</span><span class="stack-ver">configured</span></div>
+        <div class="stack-row"><span class="stack-name">pytest</span><span class="stack-ver">8.0.0+</span></div>
+        <div class="stack-row"><span class="stack-name">httpx</span><span class="stack-ver">0.27.0+</span></div>
+        <div class="stack-row"><span class="stack-name">pytest-asyncio</span><span class="stack-ver">0.23.0+</span></div>
+        <div class="stack-row"><span class="stack-name">pytest-cov</span><span class="stack-ver">4.1.0+</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Endpoints -->
+  <section>
+    <h2><span class="badge">03</span> API Endpoints</h2>
+    <table class="api-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Description</th>
+          <th>Filters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/inventory</td><td>Inventory item list</td><td class="filters-col">warehouse, category</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/inventory/{id}</td><td>Single inventory item</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/orders</td><td>Order list</td><td class="filters-col">warehouse, category, status, month</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/orders/{id}</td><td>Single order</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/dashboard/summary</td><td>Dashboard aggregates</td><td class="filters-col">warehouse, category, status, month</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/demand</td><td>Demand forecasts</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/backlog</td><td>Backlog items</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/spending/summary</td><td>Spending summary</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/spending/monthly</td><td>Monthly spend trend</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/spending/categories</td><td>Spend by category</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/spending/transactions</td><td>Recent transactions</td><td class="filters-col">—</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/reports/quarterly</td><td>Quarterly performance</td><td class="filters-col">warehouse, category</td></tr>
+        <tr><td><span class="method get">GET</span></td><td class="endpoint">/api/reports/monthly-trends</td><td>Month-over-month trends</td><td class="filters-col">warehouse, category</td></tr>
+        <tr><td><span class="method post">POST</span></td><td class="endpoint">/api/purchase-orders</td><td>Create purchase order</td><td class="filters-col">—</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Data Layer -->
+  <section>
+    <h2><span class="badge">04</span> Data Layer</h2>
+    <div class="data-grid">
+      <div class="data-card">
+        <h4>inventory.json <span class="count">32 items</span></h4>
+        <div class="fields">id · sku · name · category · warehouse<br>quantity_on_hand · reorder_point · unit_cost<br>location · last_updated</div>
+      </div>
+      <div class="data-card">
+        <h4>orders.json <span class="count">250 records · 2025</span></h4>
+        <div class="fields">id · order_number · customer · items[]<br>status · warehouse · category<br>order_date · total_value · actual_delivery</div>
+      </div>
+      <div class="data-card">
+        <h4>demand_forecasts.json <span class="count">9 records</span></h4>
+        <div class="fields">id · item_sku · item_name<br>current_demand · forecasted_demand<br>trend · period</div>
+      </div>
+      <div class="data-card">
+        <h4>spending.json <span class="count">aggregates</span></h4>
+        <div class="fields">spending_summary{}<br>monthly_spending[]<br>category_spending[]</div>
+      </div>
+      <div class="data-card">
+        <h4>transactions.json <span class="count">56 records</span></h4>
+        <div class="fields">id · date · description · category<br>warehouse · amount · vendor · type</div>
+      </div>
+      <div class="data-card">
+        <h4>backlog_items.json <span class="count">4 records</span></h4>
+        <div class="fields">id · order_id · item_sku · item_name<br>quantity_needed · quantity_available<br>days_delayed · priority · has_purchase_order</div>
+      </div>
+    </div>
+    <div class="note">
+      ⚠️ <strong>No database.</strong> All JSON files are loaded into memory when the server starts. Data mutations (e.g. creating a purchase order) do not persist across server restarts. This is suitable for the current demo context; a production deployment would require a persistent database.
+    </div>
+  </section>
+
+  <!-- Technical Debt -->
+  <section>
+    <h2><span class="badge">05</span> Technical Debt &amp; Known Issues</h2>
+    <div class="debt-grid">
+      <div class="debt-card critical">
+        <div class="debt-icon">🔴</div>
+        <div>
+          <div class="debt-title">No automated test coverage</div>
+          <div class="debt-desc">Neither frontend nor backend have test suites. Any change to the system carries unquantified regression risk. Addressed in R3.</div>
+        </div>
+      </div>
+      <div class="debt-card critical">
+        <div class="debt-icon">🔴</div>
+        <div>
+          <div class="debt-title">No persistent storage</div>
+          <div class="debt-desc">JSON file-based data layer means no writes survive a server restart. Not suitable for production use.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟡</div>
+        <div>
+          <div class="debt-title">Mixed Vue API styles</div>
+          <div class="debt-desc">Reports.vue used Options API while the rest of the codebase uses Composition API. Remediated in R1.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟡</div>
+        <div>
+          <div class="debt-title">No authentication</div>
+          <div class="debt-desc">The application has no login or access control. Any user on the network can access all data and operations.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟡</div>
+        <div>
+          <div class="debt-title">CORS allows all origins</div>
+          <div class="debt-desc">Backend is configured with <code>allow_origins=["*"]</code>. Must be restricted to specific origins before any internet-facing deployment.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟡</div>
+        <div>
+          <div class="debt-title">Incomplete endpoints</div>
+          <div class="debt-desc">Tasks API is partially implemented on the client but not in the backend. Purchase Orders backend was missing; added in R2.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟡</div>
+        <div>
+          <div class="debt-title">Partial i18n coverage</div>
+          <div class="debt-desc">LanguageSwitcher and locale files exist (en/ja) but i18n is not applied to all modules. Addressed in D2.</div>
+        </div>
+      </div>
+      <div class="debt-card">
+        <div class="debt-icon">🟢</div>
+        <div>
+          <div class="debt-title">No pagination</div>
+          <div class="debt-desc">All API responses return full datasets. Acceptable at current data volume (~250 orders, 32 inventory items); will need addressing as data grows.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Meridian Components — Inventory Dashboard Architecture Overview &nbsp;·&nbsp; Prepared by [Your Firm Name] &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; CONFIDENTIAL
+</footer>
+
+</body>
+</html>

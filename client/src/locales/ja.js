@@ -6,6 +6,8 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    reports: 'レポート',
+    restocking: '再入荷',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -378,5 +380,40 @@ export default {
     'Premier Industries': 'プレミア工業',
     'Stellar Components Ltd': 'ステラコンポーネンツ',
     'Dynamic Systems Ltd': 'ダイナミックシステムズ'
+  },
+
+  reports: {
+    title: 'パフォーマンスレポート',
+    description: '四半期パフォーマンス指標と月次トレンドを表示',
+    quarterly: '四半期パフォーマンス',
+    monthlyTrend: '月次収益トレンド',
+    monthlyAnalysis: '前月比分析',
+    quarter: '四半期',
+    totalOrders: '総注文数',
+    totalRevenue: '総収益',
+    avgOrderValue: '平均注文金額',
+    fulfillmentRate: '履行率',
+    month: '月',
+    orders: '注文',
+    revenue: '収益',
+    change: '変化',
+    growthRate: '成長率',
+    totalRevenueYTD: '年間累計収益',
+    avgMonthlyRevenue: '月平均収益',
+    totalOrdersYTD: '年間累計注文数',
+    bestQuarter: '最高パフォーマンス四半期',
+    allWarehouses: '全倉庫',
+    allCategories: '全カテゴリー'
+  },
+
+  restocking: {
+    title: '再入荷推奨',
+    description: '在庫レベルと需要予測に基づく発注推奨',
+    budgetCeiling: '予算上限',
+    itemsRecommended: '推奨アイテム数',
+    totalCost: '推定合計コスト',
+    budgetRemaining: '残予算',
+    withinBudget: '予算内',
+    overBudget: '予算超過'
   }
 }
